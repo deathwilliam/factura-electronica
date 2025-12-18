@@ -18,13 +18,13 @@ async function getStats() {
             select: { amount: true, date: true }
         });
 
-        const totalRevenue = paidInvoices.reduce((acc: number, inv) => acc + inv.amount, 0);
+        const totalRevenue = paidInvoices.reduce((acc: number, inv: { amount: number; date: Date }) => acc + inv.amount, 0);
 
         // Group by Month for Chart
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const chartData = months.map(name => ({ name, total: 0 }));
 
-        paidInvoices.forEach((inv) => {
+        paidInvoices.forEach((inv: { amount: number; date: Date }) => {
             const monthIndex = new Date(inv.date).getMonth();
             chartData[monthIndex].total += inv.amount;
         });
