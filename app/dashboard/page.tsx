@@ -18,12 +18,14 @@ async function getStats() {
             select: { amount: true, date: true }
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const totalRevenue = paidInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount), 0);
 
         // Group by Month for Chart
         const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
         const chartData = months.map(name => ({ name, total: 0 }));
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         paidInvoices.forEach((inv: any) => {
             const monthIndex = new Date(inv.date).getMonth();
             chartData[monthIndex].total += Number(inv.amount);
