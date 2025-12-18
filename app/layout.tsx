@@ -9,8 +9,19 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Factura Electrónica Premium",
-  description: "La solución definitiva para tu facturación.",
+  title: {
+    template: "%s | Factura Premium",
+    default: "Factura Electrónica Premium",
+  },
+  description: "La solución definitiva para tu facturación electrónica. Gestiona clientes, facturas y reportes en un solo lugar.",
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    url: "https://factura-premium.vercel.app",
+    title: "Factura Electrónica Premium",
+    description: "Gestión inteligente de documentos tributarios.",
+    siteName: "Factura Premium",
+  },
 };
 
 export default function RootLayout({

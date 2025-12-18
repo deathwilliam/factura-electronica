@@ -6,13 +6,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
 export async function createInvoice(formData: FormData) {
-    // const session = await auth();
-    // if (!session?.user) {
-    //   throw new Error("Unauthorized");
-    // }
-
-    // MOCK USER ID for dev until Auth is fully wired
-    const userId = "mock-user-id";
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+    const userId = session.user.id;
 
     const clientId = formData.get("clientId") as string;
     const amount = parseFloat(formData.get("amount") as string);
@@ -23,7 +21,7 @@ export async function createInvoice(formData: FormData) {
 
     await prisma.invoice.create({
         data: {
-            userId, // session.user.id
+            userId,
             clientId,
             amount,
             status,
@@ -37,12 +35,10 @@ export async function createInvoice(formData: FormData) {
 }
 
 export async function getInvoices() {
-    // const session = await auth();
-    // if (!session?.user) return [];
-    // const userId = session.user.id;
-    const userId = "mock-user-id";
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    const userId = session.user.id;
 
-    // For demo, if no invoices exist, return empty
     try {
         const invoices = await prisma.invoice.findMany({
             where: { userId },
@@ -56,7 +52,10 @@ export async function getInvoices() {
 }
 
 export async function getClients() {
-    const userId = "mock-user-id";
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    const userId = session.user.id;
+
     try {
         return await prisma.client.findMany({ where: { userId } });
     } catch (e) {
