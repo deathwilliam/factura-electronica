@@ -2,22 +2,36 @@ import { Button } from "@/components/ui/Button";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { RevenueChart } from "@/components/dashboard/RevenueChart";
+import { auth } from "@/auth";
 
 async function getStats() {
-    // Mock user ID for dev
-    const userId = "mock-user-id";
+    const session = await auth();
+    if (!session?.user?.id) return { invoiceCount: 0, clientCount: 0, revenue: 0, chartData: [] };
+    const userId = session.user.id;
+
     try {
         const invoiceCount = await prisma.invoice.count({ where: { userId } });
         const clientCount = await prisma.client.count({ where: { userId } });
 
-        const totalRevenue = await prisma.invoice.aggregate({
+        const paidInvoices = await prisma.invoice.findMany({
             where: { userId, status: 'PAID' },
-            _sum: { amount: true }
+            select: { amount: true, date: true }
         });
 
-        return { invoiceCount, clientCount, revenue: totalRevenue._sum.amount || 0 };
+        const totalRevenue = paidInvoices.reduce((acc: number, inv) => acc + inv.amount, 0);
+
+        // Group by Month for Chart
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const chartData = months.map(name => ({ name, total: 0 }));
+
+        paidInvoices.forEach((inv) => {
+            const monthIndex = new Date(inv.date).getMonth();
+            chartData[monthIndex].total += inv.amount;
+        });
+
+        return { invoiceCount, clientCount, revenue: totalRevenue, chartData };
     } catch (e) {
-        return { invoiceCount: 0, clientCount: 0, revenue: 0 };
+        return { invoiceCount: 0, clientCount: 0, revenue: 0, chartData: [] };
     }
 }
 
@@ -61,7 +75,7 @@ export default async function DashboardPage() {
                 <div className="col-span-4 rounded-xl border border-border bg-card p-6 shadow-sm min-h-[400px]">
                     <h3 className="text-lg font-semibold mb-4">Resumen de Ingresos</h3>
                     <div className="h-[350px] w-full">
-                        <RevenueChart />
+                        <RevenueChart data={stats.chartData} />
                     </div>
                 </div>
                 <div className="col-span-3 rounded-xl border border-border bg-card p-6 shadow-sm">
