@@ -4,11 +4,10 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Link from "next/link";
-// import { authenticate } from "@/app/lib/actions"; // We need to create this action
+import { authenticate } from "@/actions/auth";
 
 export default function LoginPage() {
-    // Placeholder for server action
-    // const [errorMessage, dispatch] = useActionState(authenticate, undefined);
+    const [errorMessage, dispatch] = useActionState(authenticate, undefined);
 
     return (
         <div className="min-h-screen grid lg:grid-cols-2">
@@ -19,8 +18,7 @@ export default function LoginPage() {
                         <p className="text-muted-foreground">Ingresa tus credenciales para acceder</p>
                     </div>
 
-                    <form className="space-y-4">
-                        {/* Action will go here */}
+                    <form action={dispatch} className="space-y-4">
                         <Input
                             label="Email"
                             type="email"
@@ -38,6 +36,11 @@ export default function LoginPage() {
                         <Button className="w-full" type="submit">
                             Iniciar Sesión
                         </Button>
+                        <div className="flex h-8 items-end space-x-1" aria-live="polite" aria-atomic="true">
+                            {errorMessage && (
+                                <p className="text-sm text-red-500">{errorMessage}</p>
+                            )}
+                        </div>
                     </form>
 
                     <div className="text-center text-sm">

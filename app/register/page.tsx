@@ -3,9 +3,12 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Link from "next/link";
-// import { register } from "@/app/lib/actions";
+import { register } from "@/actions/auth";
+import { useActionState } from "react";
 
 export default function RegisterPage() {
+    const [errorMessage, dispatch] = useActionState(register, undefined);
+
     return (
         <div className="min-h-screen grid lg:grid-cols-2">
             <div className="hidden lg:block bg-secondary relative overflow-hidden">
@@ -31,7 +34,7 @@ export default function RegisterPage() {
                         <p className="text-muted-foreground">Comienza tu prueba gratuita de 14 días</p>
                     </div>
 
-                    <form className="space-y-4">
+                    <form action={dispatch} className="space-y-4">
                         <Input
                             label="Nombre Completo"
                             type="text"
@@ -56,6 +59,11 @@ export default function RegisterPage() {
                         <Button className="w-full" type="submit">
                             Registrarse
                         </Button>
+                        <div className="flex h-8 items-end space-x-1" aria-live="polite" aria-atomic="true">
+                            {errorMessage && (
+                                <p className="text-sm text-red-500">{errorMessage}</p>
+                            )}
+                        </div>
                     </form>
 
                     <div className="text-center text-sm">
