@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { getClients } from "@/actions/invoices";
 import { Client } from "@prisma/client";
+import Link from "next/link";
 
 export default async function ClientsPage() {
     const clients = await getClients();
@@ -12,7 +13,9 @@ export default async function ClientsPage() {
                     <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
                     <p className="text-muted-foreground">Directorio de clientes y contactos.</p>
                 </div>
-                <Button>+ Nuevo Cliente</Button>
+                <Link href="/dashboard/clientes/new">
+                    <Button>+ Nuevo Cliente</Button>
+                </Link>
             </div>
 
             <div className="rounded-md border border-border bg-card">

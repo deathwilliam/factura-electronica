@@ -61,4 +61,35 @@ export async function getClients() {
     } catch (e) {
         return [];
     }
+    try {
+        return await prisma.client.findMany({ where: { userId } });
+    } catch (e) {
+        return [];
+    }
+}
+
+export async function createClient(formData: FormData) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+    const userId = session.user.id;
+
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const phone = formData.get("phone") as string;
+    const address = formData.get("address") as string;
+
+    await prisma.client.create({
+        data: {
+            userId,
+            name,
+            email,
+            phone,
+            address
+        }
+    });
+
+    revalidatePath("/dashboard/clientes");
+    redirect("/dashboard/clientes");
 }
