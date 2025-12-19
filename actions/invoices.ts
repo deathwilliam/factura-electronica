@@ -80,16 +80,22 @@ export async function createClient(formData: FormData) {
     const phone = formData.get("phone") as string;
     const address = formData.get("address") as string;
 
-    await prisma.client.create({
-        data: {
-            userId,
-            name,
-            email,
-            phone,
-            address
-        }
-    });
+    try {
+        await prisma.client.create({
+            data: {
+                userId,
+                name,
+                email,
+                phone,
+                address
+            }
+        });
 
-    revalidatePath("/dashboard/clientes");
+        revalidatePath("/dashboard/clientes");
+    } catch (error) {
+        console.error("Create Client Error:", error);
+        throw error;
+    }
+
     redirect("/dashboard/clientes");
 }
