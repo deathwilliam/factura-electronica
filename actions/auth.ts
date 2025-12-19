@@ -14,9 +14,11 @@ export async function authenticate(prevState: string | undefined, formData: Form
                 case 'CredentialsSignin':
                     return 'Credenciales Inválidas.';
                 default:
-                    return 'Algo salió mal.';
+                    console.error('SignIn Error:', error);
+                    return `Algo salió mal: ${error.message}`;
             }
         }
+        console.error('Auth Error:', error);
         throw error;
     }
 }
@@ -49,6 +51,7 @@ export async function register(prevState: string | undefined, formData: FormData
             // Re-throw redirect errors from signIn
             throw error;
         }
-        return 'Error al registrar usuario.';
+        console.error('Registration Error:', error);
+        return `Error al registrar usuario: ${error instanceof Error ? error.message : String(error)}`;
     }
 }
