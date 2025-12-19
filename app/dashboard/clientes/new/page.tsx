@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { createClient } from "@/actions/invoices";
+import { createClient } from "@/actions/clients";
 import Link from "next/link";
 
 export default function NewClientPage() {

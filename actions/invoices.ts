@@ -13,18 +13,24 @@ export async function createInvoice(formData: FormData) {
     const userId = session.user.id;
 
     const clientId = formData.get("clientId") as string;
-    const amount = parseFloat(formData.get("amount") as string);
+    const amountStr = formData.get("amount") as string;
     const status = formData.get("status") as string;
-    const dueDate = new Date(formData.get("dueDate") as string);
+    const dueDateStr = formData.get("dueDate") as string;
 
-    // In a real app, validate fields here (Zod)
+    // Manual Validation
+    if (!clientId) throw new Error("Client is required");
+    if (!amountStr) throw new Error("Amount is required");
+    if (!dueDateStr) throw new Error("Due date is required");
+
+    const amount = parseFloat(amountStr);
+    const dueDate = new Date(dueDateStr);
 
     await prisma.invoice.create({
         data: {
             userId,
             clientId,
             amount,
-            status,
+            status: status || "PENDING",
             dueDate,
             date: new Date(),
         },
@@ -46,7 +52,7 @@ export async function getInvoices() {
             orderBy: { date: 'desc' }
         });
         return invoices;
-    } catch (error) {
+    } catch {
         return [];
     }
 }
@@ -61,41 +67,4 @@ export async function getClients() {
     } catch (e) {
         return [];
     }
-    try {
-        return await prisma.client.findMany({ where: { userId } });
-    } catch (e) {
-        return [];
-    }
-}
-
-export async function createClient(formData: FormData) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        throw new Error("Unauthorized");
-    }
-    const userId = session.user.id;
-
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const address = formData.get("address") as string;
-
-    try {
-        await prisma.client.create({
-            data: {
-                userId,
-                name,
-                email,
-                phone,
-                address
-            }
-        });
-
-        revalidatePath("/dashboard/clientes");
-    } catch (error) {
-        console.error("Create Client Error:", error);
-        throw error;
-    }
-
-    redirect("/dashboard/clientes");
 }
