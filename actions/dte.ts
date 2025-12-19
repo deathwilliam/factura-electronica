@@ -261,8 +261,8 @@ export async function generateDTE(invoiceId: string): Promise<{ success: boolean
             // @ts-ignore
             data: {
                 dteJson: dte as any, // Cast temporal
-                generationCode,
-                controlNumber,
+                generationCode: codigoGeneracion,
+                controlNumber: numeroControl,
                 type: "01", // Factura
             },
         });
