@@ -31,6 +31,20 @@ async function check() {
         });
         console.log("Client created successfully:", client);
 
+        // Create an invoice
+        console.log("Creating invoice...");
+        const invoice = await prisma.invoice.create({
+            data: {
+                userId: user.id,
+                clientId: client.id,
+                amount: 100.50,
+                status: "PENDING",
+                dueDate: new Date(),
+                date: new Date()
+            }
+        });
+        console.log("Invoice created successfully:", invoice);
+
     } catch (e) {
         console.error("ERROR DETAIL:", e);
     } finally {

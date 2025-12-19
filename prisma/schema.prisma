@@ -16,6 +16,12 @@ model User {
   name      String
   email     String   @unique
   password  String
+  razonSocial String?
+  nit       String? // Número de Identificación Tributaria
+  nrc       String? // Número de Registro de Contribuyente
+  giro      String?
+  direccion String?
+  telefono  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   invoices  Invoice[]
@@ -28,6 +34,12 @@ model Client {
   email     String
   address   String?
   phone     String?
+  razonSocial String?
+  nit       String?
+  nrc       String?
+  giro      String?
+  dui       String?   // Documento Único de Identidad (Personas Naturales)
+  tipo      String    @default("NATURAL") // NATURAL, JURIDICO
   userId    String
   user      User      @relation(fields: [userId], references: [id])
   invoices  Invoice[]
@@ -36,18 +48,25 @@ model Client {
 }
 
 model Invoice {
-  id          String        @id @default(uuid())
-  clientId    String
-  userId      String
-  amount      Decimal
-  status      String        @default("PENDING") // PENDING, PAID, OVERDUE
-  date        DateTime      @default(now())
-  dueDate     DateTime
-  client      Client        @relation(fields: [clientId], references: [id])
-  user        User          @relation(fields: [userId], references: [id])
-  items       InvoiceItem[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                String        @id @default(uuid())
+  clientId          String
+  userId            String
+  amount            Decimal
+  status            String        @default("PENDING") // PENDING, PAID, OVERDUE
+  type              String        @default("CONSUMIDOR_FINAL") // CONSUMIDOR_FINAL, CREDITO_FISCAL
+  dteJson           Json?         // JSON generado
+  dteSigned         Json?         // JSON firmado
+  receptionSeal     String?       // Sello de Recepción
+  generationCode    String?       // Código de Generación (UUID del DTE)
+  controlNumber     String?       // Número de Control (DTE-00-...)
+  transmissionStatus String       @default("PENDING") // PENDING, SENT, REJECTED, CONTINGENCY
+  date              DateTime      @default(now())
+  dueDate           DateTime
+  client            Client        @relation(fields: [clientId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  items             InvoiceItem[]
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model InvoiceItem {
