@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { createInvoice } from "@/actions/invoices";
+import { createInvoice, getClients } from "@/actions/invoices";
 import Link from "next/link";
 
-export default function NewInvoicePage() {
+export default async function NewInvoicePage() {
+    const clients = await getClients();
+
     return (
         <div className="max-w-2xl mx-auto space-y-8">
             <div>
@@ -13,9 +15,20 @@ export default function NewInvoicePage() {
 
             <form action={createInvoice} className="space-y-6 bg-card p-6 rounded-xl border border-border">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Cliente (ID Mock)</label>
-                    <Input name="clientId" placeholder="UUID del cliente" defaultValue="mock-client-id" required />
-                    <p className="text-xs text-muted-foreground">En fase demo, usa cualquier ID o crea un cliente primero.</p>
+                    <label className="text-sm font-medium">Cliente</label>
+                    <select name="clientId" className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required>
+                        <option value="">Selecciona un cliente</option>
+                        {clients.map((client) => (
+                            <option key={client.id} value={client.id}>
+                                {client.name}
+                            </option>
+                        ))}
+                    </select>
+                    {clients.length === 0 && (
+                        <p className="text-xs text-red-500">
+                            No hay clientes. <Link href="/dashboard/clientes/new" className="underline">Crea uno primero</Link>.
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
