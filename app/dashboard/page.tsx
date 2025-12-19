@@ -31,9 +31,16 @@ async function getStats() {
             chartData[monthIndex].total += Number(inv.amount);
         });
 
-        return { invoiceCount, clientCount, revenue: totalRevenue, chartData };
+        const recentInvoices = await prisma.invoice.findMany({
+            where: { userId },
+            include: { client: true },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+        });
+
+        return { invoiceCount, clientCount, revenue: totalRevenue, chartData, recentInvoices };
     } catch (e) {
-        return { invoiceCount: 0, clientCount: 0, revenue: 0, chartData: [] };
+        return { invoiceCount: 0, clientCount: 0, revenue: 0, chartData: [], recentInvoices: [] };
     }
 }
 
@@ -82,8 +89,31 @@ export default async function DashboardPage() {
                 </div>
                 <div className="col-span-3 rounded-xl border border-border bg-card p-6 shadow-sm">
                     <h3 className="text-lg font-semibold mb-4">Actividad Reciente</h3>
-                    <div className="space-y-4 text-center text-muted-foreground py-10">
-                        No hay actividad reciente.
+                    <div className="space-y-4">
+                        {stats.recentInvoices.length === 0 ? (
+                            <div className="text-center text-muted-foreground py-10">
+                                No hay actividad reciente.
+                            </div>
+                        ) : (
+                            stats.recentInvoices.map((invoice) => (
+                                <div key={invoice.id} className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0">
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">{invoice.client.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {invoice.controlNumber || "Sin DTE"} • {new Date(invoice.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-bold">${Number(invoice.amount).toFixed(2)}</div>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${invoice.status === 'PAID' ? 'bg-green-100 text-green-700' :
+                                            invoice.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            {invoice.status === 'PAID' ? 'Pagado' : invoice.status === 'PENDING' ? 'Pendiente' : 'Vencido'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

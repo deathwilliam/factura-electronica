@@ -6,7 +6,11 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { useRef } from 'react';
 
-export default function InvoicePDF() {
+interface InvoicePDFProps {
+    invoice?: any;
+}
+
+export default function InvoicePDF({ invoice }: InvoicePDFProps) {
     const invoiceRef = useRef<HTMLDivElement>(null);
 
     const handleDownload = async () => {
@@ -29,11 +33,17 @@ export default function InvoicePDF() {
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save('factura.pdf');
+            pdf.save(`factura-${invoice?.controlNumber || 'borrador'}.pdf`);
         } catch (e) {
             console.error("Error generating PDF", e);
         }
     };
+
+    if (!invoice) return <div>Cargando factura...</div>;
+
+    const user = invoice.user || {};
+    const client = invoice.client || {};
+    const items = invoice.items || [];
 
     return (
         <div className="space-y-4">
@@ -47,13 +57,20 @@ export default function InvoicePDF() {
                 <div className="flex justify-between items-start mb-12">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">FACTURA</h1>
-                        <div className="text-sm text-gray-500 mt-1"># INV-00123</div>
+                        <div className="text-sm text-gray-500 mt-1">
+                            {invoice.controlNumber ? `Ref: ${invoice.controlNumber}` : 'BORRADOR'}
+                        </div>
+                        {invoice.generationCode && (
+                            <div className="text-xs text-slate-400 mt-2 font-mono">
+                                DTE: {invoice.generationCode}
+                            </div>
+                        )}
                     </div>
                     <div className="text-right">
-                        <h2 className="text-xl font-bold">Tu Empresa S.A.</h2>
-                        <p className="text-sm text-gray-500">Calle Falsa 123</p>
-                        <p className="text-sm text-gray-500">Santiago, Chile</p>
-                        <p className="text-sm text-gray-500">contacto@ejemplo.com</p>
+                        <h2 className="text-xl font-bold">{user.razonSocial || user.name}</h2>
+                        <p className="text-sm text-gray-500">{user.direccion || "Dirección no registrada"}</p>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-gray-500">NRC: {user.nrc || "N/A"}</p>
                     </div>
                 </div>
 
@@ -61,17 +78,18 @@ export default function InvoicePDF() {
                 <div className="flex justify-between mb-12 border-b border-gray-100 pb-8">
                     <div>
                         <h3 className="font-semibold text-gray-900 mb-2">Facturado a:</h3>
-                        <p className="text-gray-600">Cliente Ejemplo Ltda.</p>
-                        <p className="text-gray-600 text-sm">Av. Libertador 444</p>
+                        <p className="text-gray-600">{client.name}</p>
+                        <p className="text-gray-600 text-sm">{client.address || "Dirección no registrada"}</p>
+                        <p className="text-gray-600 text-sm">NIT/DUI: {client.nit || client.dui || "N/A"}</p>
                     </div>
                     <div className="text-right">
                         <div className="mb-2">
-                            <span className="text-gray-500 text-sm mr-4">Fecha:</span>
-                            <span className="font-medium">20 Dic 2025</span>
+                            <span className="text-gray-500 text-sm mr-4">Fecha Emisión:</span>
+                            <span className="font-medium">{new Date(invoice.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div>
                             <span className="text-gray-500 text-sm mr-4">Vencimiento:</span>
-                            <span className="font-medium">30 Dic 2025</span>
+                            <span className="font-medium">{new Date(invoice.dueDate).toLocaleDateString()}</span>
                         </div>
                     </div>
                 </div>
@@ -87,18 +105,14 @@ export default function InvoicePDF() {
                         </tr>
                     </thead>
                     <tbody className="text-sm">
-                        <tr className="border-b border-gray-100">
-                            <td className="py-4">Desarrollo Web - Factura Electrónica App</td>
-                            <td className="text-center py-4">1</td>
-                            <td className="text-right py-4">$1,500.00</td>
-                            <td className="text-right py-4 font-medium">$1,500.00</td>
-                        </tr>
-                        <tr className="border-b border-gray-100">
-                            <td className="py-4">Servicios de Consultoría</td>
-                            <td className="text-center py-4">5</td>
-                            <td className="text-right py-4">$100.00</td>
-                            <td className="text-right py-4 font-medium">$500.00</td>
-                        </tr>
+                        {items.map((item: any, idx: number) => (
+                            <tr key={idx} className="border-b border-gray-100">
+                                <td className="py-4">{item.description}</td>
+                                <td className="text-center py-4">{item.quantity}</td>
+                                <td className="text-right py-4">${Number(item.price).toFixed(2)}</td>
+                                <td className="text-right py-4 font-medium">${(Number(item.price) * item.quantity).toFixed(2)}</td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
 
@@ -107,22 +121,23 @@ export default function InvoicePDF() {
                     <div className="w-64 space-y-3">
                         <div className="flex justify-between text-sm text-gray-600">
                             <span>Subtotal</span>
-                            <span>$2,000.00</span>
+                            <span>${Number(invoice.amount).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-gray-600">
-                            <span>IVA (19%)</span>
-                            <span>$380.00</span>
+                            <span>IVA (13%)</span>
+                            <span>Included</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg pt-3 border-t border-gray-900">
                             <span>Total</span>
-                            <span>$2,380.00</span>
+                            <span>${Number(invoice.amount).toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
                 <div className="mt-20 pt-8 border-t border-gray-100 text-center text-sm text-gray-400">
-                    <p>Gracias por su preferencia.</p>
+                    <p>Documento Tributario Electrónico - El Salvador</p>
+                    {invoice.generationCode && <p className="mt-1 font-mono text-xs">{invoice.generationCode}</p>}
                 </div>
             </div>
         </div>
