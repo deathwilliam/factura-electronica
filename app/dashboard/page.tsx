@@ -90,16 +90,17 @@ export default async function DashboardPage() {
                 <div className="col-span-3 rounded-xl border border-border bg-card p-6 shadow-sm">
                     <h3 className="text-lg font-semibold mb-4">Actividad Reciente</h3>
                     <div className="space-y-4">
-                        {stats.recentInvoices.length === 0 ? (
+                        {(stats.recentInvoices || []).length === 0 ? (
                             <div className="text-center text-muted-foreground py-10">
                                 No hay actividad reciente.
                             </div>
                         ) : (
-                            stats.recentInvoices.map((invoice) => (
+                            (stats.recentInvoices || []).map((invoice) => (
                                 <div key={invoice.id} className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0">
                                     <div className="flex flex-col">
                                         <span className="font-medium">{invoice.client.name}</span>
                                         <span className="text-xs text-muted-foreground">
+                                            {/* @ts-ignore */}
                                             {invoice.controlNumber || "Sin DTE"} • {new Date(invoice.createdAt).toLocaleDateString()}
                                         </span>
                                     </div>
