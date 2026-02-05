@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "npx prisma generate"
+    "postinstall": "npx prisma generate",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:reset": "npx prisma migrate reset --force && npm run db:seed"
   },
   "dependencies": {
     "@prisma/client": "^6.19.1",
@@ -31,6 +33,7 @@
     "eslint-config-next": "16.1.0",
     "prisma": "^6.19.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
