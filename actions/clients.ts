@@ -4,44 +4,61 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { createClientSchema, formatZodErrors } from "@/lib/validations";
 
-export async function createClient(formData: FormData) {
+export async function createClient(prevState: { error?: string } | undefined, formData: FormData) {
     const session = await auth();
     if (!session?.user?.id) {
-        throw new Error("Unauthorized");
+        return { error: "No autorizado" };
     }
     const userId = session.user.id;
 
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const phone = formData.get("phone") as string;
-    const address = formData.get("address") as string;
+    const parsed = createClientSchema.safeParse({
+        name: formData.get("name"),
+        email: formData.get("email"),
+        phone: formData.get("phone") || "",
+        address: formData.get("address") || "",
+        razonSocial: formData.get("razonSocial") || "",
+        nit: formData.get("nit") || "",
+        nrc: formData.get("nrc") || "",
+        dui: formData.get("dui") || "",
+        giro: formData.get("giro") || "",
+        tipo: formData.get("tipo") || "NATURAL",
+    });
 
-    // Manual validation
-    if (!name || name.trim() === "") {
-        throw new Error("Name is required");
-    }
-    if (!email || email.trim() === "") {
-        throw new Error("Email is required");
+    if (!parsed.success) {
+        return { error: formatZodErrors(parsed.error) };
     }
 
     try {
         await prisma.client.create({
             data: {
                 userId,
-                name,
-                email,
-                phone,
-                address
+                ...parsed.data,
             }
         });
 
         revalidatePath("/dashboard/clientes");
         revalidatePath("/dashboard/facturas/new");
     } catch (error) {
-        console.error("Create Client Error:", error);
-        throw error;
+        console.error("Error al crear cliente:", error);
+        return { error: "Error al crear el cliente. Intenta de nuevo." };
     }
 
     redirect("/dashboard/clientes");
+}
+
+export async function getClients() {
+    const session = await auth();
+    if (!session?.user?.id) return [];
+    const userId = session.user.id;
+
+    try {
+        return await prisma.client.findMany({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+        });
+    } catch {
+        return [];
+    }
 }

@@ -1,40 +1,72 @@
-import Link from "next/link";
+"use client";
 
-export function Sidebar() {
-    const navItems = [
-        { label: "Dashboard", href: "/dashboard", icon: "📊" },
-        { label: "Facturas", href: "/dashboard/facturas", icon: "📄" },
-        { label: "Clientes", href: "/dashboard/clientes", icon: "👥" },
-        { label: "Configuración", href: "/dashboard/settings", icon: "⚙️" },
-    ];
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
+
+const navItems = [
+    { label: "Dashboard", href: "/dashboard", icon: "📊" },
+    { label: "Facturas", href: "/dashboard/facturas", icon: "📄" },
+    { label: "Clientes", href: "/dashboard/clientes", icon: "👥" },
+    { label: "Configuración", href: "/dashboard/settings", icon: "⚙️" },
+];
+
+interface SidebarProps {
+    userName?: string;
+    userEmail?: string;
+}
+
+export function Sidebar({ userName, userEmail }: SidebarProps) {
+    const pathname = usePathname();
+
+    const isActive = (href: string) => {
+        if (href === "/dashboard") return pathname === "/dashboard";
+        return pathname.startsWith(href);
+    };
+
+    const initials = userName
+        ? userName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+        : "??";
 
     return (
-        <aside className="w-64 border-r border-border bg-card h-screen hidden md:block fixed left-0 top-0">
+        <aside className="w-64 border-r border-border bg-card h-screen hidden md:flex md:flex-col fixed left-0 top-0">
             <div className="p-6 border-b border-border">
-                <h1 className="text-xl font-bold text-primary">Factura<span className="text-foreground">Premium</span></h1>
+                <h1 className="text-xl font-bold text-primary">
+                    Factura<span className="text-foreground">Premium</span>
+                </h1>
             </div>
-            <nav className="p-4 space-y-2">
+            <nav className="p-4 space-y-1 flex-1">
                 {navItems.map((item) => (
                     <Link
                         key={item.href}
                         href={item.href}
-                        className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-primary hover:bg-accent rounded-lg transition-all"
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                            isActive(item.href)
+                                ? "bg-primary/10 text-primary font-semibold"
+                                : "text-muted-foreground hover:text-primary hover:bg-accent"
+                        }`}
                     >
                         <span>{item.icon}</span>
                         <span className="font-medium">{item.label}</span>
                     </Link>
                 ))}
             </nav>
-            <div className="absolute bottom-0 w-full p-4 border-t border-border">
+            <div className="p-4 border-t border-border">
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs">
-                        JD
+                        {initials}
                     </div>
-                    <div className="overflow-hidden">
-                        <p className="text-sm font-medium truncate">Juan Doe</p>
-                        <p className="text-xs text-muted-foreground truncate">Premium Plan</p>
+                    <div className="overflow-hidden flex-1">
+                        <p className="text-sm font-medium truncate">{userName || "Usuario"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{userEmail || ""}</p>
                     </div>
                 </div>
+                <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="w-full mt-2 px-4 py-2 text-sm text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
+                >
+                    Cerrar Sesión
+                </button>
             </div>
         </aside>
     );
