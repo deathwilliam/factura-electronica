@@ -5,6 +5,28 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { updateSettingsSchema, formatZodErrors } from "@/lib/validations";
 
+export async function getUser() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return null;
+    }
+
+    return prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            razonSocial: true,
+            nit: true,
+            nrc: true,
+            giro: true,
+            direccion: true,
+            telefono: true,
+        },
+    });
+}
+
 export async function updateSettings(formData: FormData) {
     const session = await auth();
     if (!session?.user?.id) {

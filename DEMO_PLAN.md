@@ -1,7 +1,7 @@
 # Plan de Demo - Factura Electrónica Premium
 
 ## Objetivo
-Demostrar el flujo completo del sistema de facturación electrónica para El Salvador, desde el registro hasta la transmisión de un DTE al Ministerio de Hacienda.
+Demostrar el flujo completo del sistema de facturación electrónica para El Salvador, incluyendo gestión de productos, cotizaciones, pagos, gastos, reportes y funcionalidades DTE avanzadas.
 
 ---
 
@@ -18,14 +18,14 @@ Demostrar el flujo completo del sistema de facturación electrónica para El Sal
 
 ---
 
-## Guión de la Demo (15-20 minutos)
+## Guión de la Demo (30-40 minutos)
 
 ### Parte 1: Introducción (2 min)
 **Pantalla:** Landing page `/`
 
 - Mostrar la página de inicio
-- Explicar el propósito: "Sistema de facturación electrónica para freelancers y empresas en El Salvador"
-- Destacar características principales visibles en la landing
+- Explicar el propósito: "Sistema completo de facturación electrónica para freelancers y empresas en El Salvador"
+- Destacar: Gestión de productos, cotizaciones, pagos, gastos y reportes
 
 ---
 
@@ -40,153 +40,282 @@ Demostrar el flujo completo del sistema de facturación electrónica para El Sal
 3. Click "Registrarse"
 4. **Resultado esperado:** Redirección automática al Dashboard
 
-**Punto a destacar:** Auto-login después del registro
+**Punto a destacar:** Auto-login después del registro, sidebar con navegación organizada por secciones
 
 ---
 
-### Parte 3: Configuración Fiscal (3 min)
+### Parte 3: Configuración Fiscal y Sucursales (3 min)
+**Pantalla:** `/dashboard/configuracion`
+
+1. Navegar a "Configuración" en el sidebar (sección Sistema)
+2. Mostrar las pestañas disponibles:
+   - **Datos de Empresa** - Información fiscal
+   - **Sucursales** - Establecimientos y puntos de venta
+   - **Documentos** - Prefijos y notas predeterminadas
+   - **Personalización** - Logo y colores
+3. En "Sucursales", crear una sucursal:
+   - **Nombre:** "Casa Matriz"
+   - **Código:** "0001"
+   - **Código POS:** "0001"
+   - **Dirección:** "Col. Escalón, San Salvador"
+   - Marcar como "Sucursal principal"
+4. Click "Crear Sucursal"
+
+**Punto a destacar:** Códigos de establecimiento requeridos por MH para los DTEs
+
+---
+
+### Parte 4: Configurar Perfil Fiscal (2 min)
 **Pantalla:** `/dashboard/settings`
 
-1. Navegar a "Configuración" en el sidebar
-2. Explicar: "Antes de emitir DTEs, necesitamos configurar los datos fiscales"
-3. Llenar datos:
+1. Navegar a "Perfil" en el sidebar
+2. Llenar datos fiscales:
    - **Razón Social:** "Demo Empresa S.A. de C.V."
    - **NIT:** "0614-123456-123-4"
    - **NRC:** "123456-7"
    - **Giro:** "Servicios de Consultoría"
    - **Dirección:** "Col. Escalón, San Salvador"
    - **Teléfono:** "2222-3333"
-4. Click "Guardar Cambios"
-5. **Resultado esperado:** Mensaje de éxito verde
-
-**Punto a destacar:** Estos datos aparecerán automáticamente en todas las facturas
+3. Click "Guardar Cambios"
 
 ---
 
-### Parte 4: Crear Cliente (3 min)
+### Parte 5: Crear Catálogo de Productos (3 min)
+**Pantalla:** `/dashboard/productos`
+
+1. Navegar a "Productos" en el sidebar (sección Catálogo)
+2. Click "+ Nuevo Producto"
+3. Crear dos productos/servicios:
+
+**Producto 1:**
+   - **Código:** "CONS-001"
+   - **Tipo:** Servicio
+   - **Nombre:** "Consultoría por Hora"
+   - **Precio:** $75.00
+   - **Unidad:** Hora
+   - Gravado con IVA: ✓
+
+**Producto 2:**
+   - **Código:** "DEV-001"
+   - **Tipo:** Servicio
+   - **Nombre:** "Desarrollo de Software"
+   - **Precio:** $1,500.00
+   - **Unidad:** Servicio
+   - Gravado con IVA: ✓
+
+4. Mostrar la tabla con filtros por tipo (Producto/Servicio)
+
+**Punto a destacar:** Los productos se pueden seleccionar al crear facturas o cotizaciones
+
+---
+
+### Parte 6: Crear Cliente (2 min)
 **Pantalla:** `/dashboard/clientes/new`
 
 1. Navegar a "Clientes" → "+ Nuevo Cliente"
-2. Explicar los tipos de cliente (Natural vs Jurídico)
-3. Llenar formulario:
-   - **Nombre:** "Cliente Ejemplo"
-   - **Email:** "cliente@ejemplo.com"
-   - **Teléfono:** "7777-8888"
+2. Llenar formulario:
+   - **Nombre:** "Empresa ABC"
+   - **Email:** "contacto@empresaabc.com"
    - **Tipo:** Persona Jurídica
    - **NIT:** "0614-987654-321-0"
    - **NRC:** "654321-8"
-   - **Razón Social:** "Cliente Ejemplo S.A."
-4. Click "Guardar Cliente"
-5. **Resultado esperado:** Redirección a lista de clientes con tarjeta visible
-
-**Punto a destacar:** Mostrar la tarjeta con badge "Jurídico" y datos fiscales
+   - **Razón Social:** "Empresa ABC S.A. de C.V."
+3. Click "Guardar Cliente"
 
 ---
 
-### Parte 5: Crear Factura con Items (4 min)
+### Parte 7: Crear Cotización (3 min)
+**Pantalla:** `/dashboard/cotizaciones/new`
+
+1. Navegar a "Cotizaciones" → "+ Nueva Cotización"
+2. Explicar: "Las cotizaciones permiten enviar propuestas antes de facturar"
+3. Llenar formulario:
+   - **Cliente:** Seleccionar "Empresa ABC"
+   - **Válida hasta:** (30 días en el futuro)
+   - **Items:**
+     - Seleccionar "Consultoría por Hora" → Cantidad: 20 → $1,500.00
+     - Seleccionar "Desarrollo de Software" → Cantidad: 1 → $1,500.00
+   - **Notas:** "Propuesta válida por 30 días"
+4. Observar cálculo automático: Subtotal $3,000 + IVA $390 = Total $3,390
+5. Click "Crear Cotización"
+6. Ver detalle de la cotización con opciones:
+   - Cambiar estado (Enviada, Aceptada, Rechazada)
+   - **Convertir a Factura** ← Destacar esta función
+
+**Punto a destacar:** Workflow completo de cotización → factura
+
+---
+
+### Parte 8: Crear Factura con Productos (3 min)
 **Pantalla:** `/dashboard/facturas/new`
 
 1. Navegar a "Facturas" → "+ Nueva Factura"
-2. Explicar la interfaz:
-   - Selector de cliente
-   - Tipo de documento (Consumidor Final vs Crédito Fiscal)
-   - Items dinámicos
-3. Llenar formulario:
-   - **Cliente:** Seleccionar "Cliente Ejemplo"
+2. Llenar formulario:
+   - **Cliente:** Seleccionar "Empresa ABC"
    - **Tipo:** "Crédito Fiscal"
-   - **Fecha Vencimiento:** (seleccionar fecha futura)
-   - **Item 1:**
-     - Descripción: "Consultoría Técnica"
-     - Cantidad: 10
-     - Precio: $50.00
-   - Click "+ Agregar item"
-   - **Item 2:**
-     - Descripción: "Soporte Mensual"
-     - Cantidad: 1
-     - Precio: $200.00
-4. Observar cálculo automático del subtotal: $700.00
-5. Click "Guardar Factura"
-6. **Resultado esperado:** Redirección a lista de facturas
+   - **Items:** Seleccionar productos del catálogo
+3. Click "Guardar Factura"
+4. Ver detalle y descargar PDF
 
-**Punto a destacar:** Cálculo en tiempo real, items dinámicos
+**Punto a destacar:** Los productos del catálogo facilitan la facturación
 
 ---
 
-### Parte 6: Ver Detalle y PDF (2 min)
-**Pantalla:** `/dashboard/facturas/[id]`
+### Parte 9: Registrar Pagos (3 min)
+**Pantalla:** `/dashboard/pagos`
 
-1. Click en el número de factura en la lista
-2. Mostrar el preview del PDF:
-   - Header con datos de la empresa
-   - Datos del cliente
-   - Tabla de items con cantidades y precios
-   - Cálculo de IVA (13% separado para CCF)
-   - Total
-3. Click "Descargar PDF"
-4. **Resultado esperado:** Descarga del archivo PDF
+1. Navegar a "Pagos" en el sidebar (sección Finanzas)
+2. Click "+ Registrar Pago"
+3. Seleccionar la factura creada
+4. Mostrar información de la factura (monto total, saldo pendiente)
+5. Registrar un pago parcial:
+   - **Monto:** $1,000.00
+   - **Método:** Transferencia
+   - **Referencia:** "TRF-12345"
+6. Click "Registrar Pago"
+7. Observar que el estado de la factura cambia a "Pago Parcial"
+8. Registrar segundo pago por el saldo restante
+9. Observar que el estado cambia a "Pagada"
 
-**Punto a destacar:** IVA desglosado para Crédito Fiscal vs incluido para Consumidor Final
+**Punto a destacar:** Control de pagos parciales con historial
 
 ---
 
-### Parte 7: Generar y Transmitir DTE (3 min)
+### Parte 10: Gestión de Gastos (3 min)
+**Pantalla:** `/dashboard/gastos`
+
+1. Navegar a "Gastos" en el sidebar
+2. Click "Categorías" para crear categorías:
+   - "Servicios" (color azul)
+   - "Oficina" (color verde)
+   - "Transporte" (color naranja)
+3. Click "+ Nuevo Gasto"
+4. Registrar gastos:
+   - **Descripción:** "Internet mensual"
+   - **Monto:** $45.00
+   - **Categoría:** Servicios
+   - **Proveedor:** "Claro"
+   - **Deducible:** ✓
+5. Ver resumen con total de gastos por categoría
+
+**Punto a destacar:** Clasificación de gastos para contabilidad y declaraciones
+
+---
+
+### Parte 11: Reportes y Análisis (4 min)
+**Pantalla:** `/dashboard/reportes`
+
+1. Navegar a "Reportes" en el sidebar
+2. Mostrar las pestañas disponibles:
+
+**Pestaña Ventas:**
+   - Total de facturas y monto
+   - IVA débito fiscal
+   - Gráfico por estado y tipo
+   - Detalle de facturas
+
+**Pestaña Clientes:**
+   - Ranking de clientes por volumen
+   - Montos pagados vs pendientes
+
+**Pestaña Gastos:**
+   - Total de gastos
+   - Distribución por categoría (con colores)
+   - Montos deducibles
+
+**Pestaña Utilidad:**
+   - Ingresos vs Gastos
+   - Utilidad bruta
+   - Margen de ganancia (%)
+   - Gráfico mensual
+
+3. Demostrar filtros por fecha
+4. Explicar que los datos se pueden exportar a CSV
+
+**Punto a destacar:** Visión completa del negocio para toma de decisiones
+
+---
+
+### Parte 12: Proceso DTE (3 min)
 **Pantalla:** `/dashboard/facturas/[id]`
 
-1. Explicar el proceso de DTE:
-   - Paso 1: Generar JSON según especificación MH
-   - Paso 2: Firmar digitalmente
-   - Paso 3: Transmitir al Ministerio de Hacienda
+1. Ir al detalle de una factura
 2. Click en "Generar, Firmar y Enviar DTE"
-3. Observar los estados progresivos:
-   - "Generando JSON DTE..."
-   - "Firmando DTE..."
-   - "Transmitiendo a Hacienda..."
-4. **Resultado esperado:**
-   - Si hay conexión MH: "DTE procesado. Sello: ..."
-   - Si no hay conexión: Error explicativo
+3. Explicar el proceso:
+   - Generación de JSON según especificación MH
+   - Firma digital
+   - Transmisión al Ministerio de Hacienda
+4. Mostrar el Número de Control y Código de Generación
 
-**Punto a destacar:** El sistema genera automáticamente:
-- Código de Generación (UUID)
-- Número de Control (DTE-01-0001-001-...)
-- JSON completo según especificación MH
+**Punto a destacar:** Cumplimiento total con normativa MH El Salvador
 
 ---
 
-### Parte 8: Dashboard y Reportes (2 min)
+### Parte 13: Anulación de DTE (2 min)
+**Pantalla:** `/dashboard/anulaciones`
+
+1. Navegar a "Anulaciones" en el sidebar (sección DTE)
+2. Explicar: "Para anular un DTE ya transmitido"
+3. Click "+ Nueva Anulación"
+4. Mostrar:
+   - Solo facturas transmitidas disponibles
+   - Motivos de anulación según MH:
+     - Solicitud del receptor
+     - Error en facturación
+     - Devolución de mercadería
+5. Crear una solicitud (sin enviar)
+
+**Punto a destacar:** Proceso formal de invalidación según normativa
+
+---
+
+### Parte 14: Modo Contingencia (2 min)
+**Pantalla:** `/dashboard/contingencia`
+
+1. Navegar a "Contingencia" en el sidebar
+2. Explicar: "Cuando no hay conexión a internet o MH no disponible"
+3. Mostrar el botón "Iniciar Modo Contingencia"
+4. Explicar el flujo:
+   - Se registran facturas localmente
+   - Se acumulan en un lote
+   - Al recuperar conexión, se transmiten todas juntas
+5. Mostrar historial de contingencias
+
+**Punto a destacar:** El negocio no se detiene por problemas de conexión
+
+---
+
+### Parte 15: Dashboard Principal (2 min)
 **Pantalla:** `/dashboard`
 
-1. Navegar al Dashboard principal
-2. Mostrar:
-   - Tarjetas de estadísticas (Ingresos, Facturas, Clientes)
-   - Gráfico de ingresos por mes
-   - Actividad reciente con enlaces
-3. Click en una factura de la actividad reciente
+1. Navegar al Dashboard
+2. Mostrar tarjetas de resumen:
+   - Ingresos totales
+   - Facturas del mes
+   - Clientes activos
+3. Mostrar gráfico de ingresos por mes
+4. Mostrar actividad reciente
 
-**Punto a destacar:** Vista consolidada del negocio
-
----
-
-### Parte 9: Filtros y Búsqueda (1 min)
-**Pantalla:** `/dashboard/facturas`
-
-1. Mostrar filtros por estado (Todos, Pendiente, Pagado, Vencido)
-2. Demostrar búsqueda por cliente
-3. Mostrar columna de estado DTE
-
-**Punto a destacar:** Gestión eficiente de documentos
+**Punto a destacar:** Vista ejecutiva del negocio
 
 ---
 
-### Parte 10: Cierre (1 min)
+### Parte 16: Cierre (2 min)
 
-1. Mostrar botón de cerrar sesión en el sidebar
-2. Resumir características:
-   - Registro e inicio de sesión seguro
-   - Gestión de clientes con datos fiscales
-   - Facturación con items dinámicos
-   - Generación de PDF profesional
-   - Integración con DTE El Salvador
-   - Dashboard con estadísticas
+Resumir todas las funcionalidades:
+
+| Módulo | Funcionalidad |
+|--------|---------------|
+| **Productos** | Catálogo con precios y unidades |
+| **Cotizaciones** | Propuestas convertibles a factura |
+| **Facturas** | CF y CCF con items dinámicos |
+| **Pagos** | Registro parcial/total con métodos |
+| **Gastos** | Control con categorías y deducibles |
+| **Reportes** | Ventas, clientes, gastos, utilidad |
+| **DTE** | Generación, firma y transmisión MH |
+| **Anulaciones** | Invalidación formal de DTEs |
+| **Contingencia** | Facturación offline |
+| **Configuración** | Sucursales, prefijos, personalización |
 
 ---
 
@@ -199,6 +328,14 @@ Password: demo123456
 Razón Social: Demo Corp S.A. de C.V.
 NIT: 0614-010101-101-0
 NRC: 100001-1
+```
+
+### Productos de Prueba
+```
+1. CONS-001 - Consultoría por Hora ($75/hora)
+2. DEV-001 - Desarrollo de Software ($1,500/servicio)
+3. SOP-001 - Soporte Técnico Mensual ($200/mes)
+4. CAP-001 - Capacitación ($500/día)
 ```
 
 ### Clientes de Prueba
@@ -215,23 +352,38 @@ NRC: 100001-1
    - NRC: 300003-3
 ```
 
-### Facturas de Prueba
+### Categorías de Gastos
 ```
-1. Factura #1 - Juan Pérez
-   - Tipo: Consumidor Final
-   - Items: Servicio básico ($100)
-   - Estado: Pagado
-
-2. Factura #2 - Empresa XYZ
-   - Tipo: Crédito Fiscal
-   - Items: Consultoría ($500), Capacitación ($300)
-   - Estado: Pendiente
-
-3. Factura #3 - Comercial ABC
-   - Tipo: Crédito Fiscal
-   - Items: Desarrollo web ($1,500)
-   - Estado: Pendiente
+1. Servicios (azul) - Internet, teléfono, hosting
+2. Oficina (verde) - Papelería, suministros
+3. Transporte (naranja) - Combustible, parqueo
+4. Marketing (púrpura) - Publicidad, diseño
 ```
+
+---
+
+## Rutas de Demo Rápida
+
+### Demo Mínima (10 min)
+1. `/register` - Crear cuenta
+2. `/dashboard/clientes/new` - Crear cliente
+3. `/dashboard/facturas/new` - Crear factura
+4. `/dashboard/facturas/[id]` - Ver PDF
+5. `/dashboard` - Ver resumen
+
+### Demo Financiera (15 min)
+1. Crear productos en `/dashboard/productos`
+2. Crear factura con productos
+3. Registrar pagos parciales
+4. Registrar gastos con categorías
+5. Ver reportes de utilidad
+
+### Demo DTE Completa (20 min)
+1. Configurar datos fiscales y sucursales
+2. Crear factura tipo CCF
+3. Generar y transmitir DTE
+4. Mostrar anulaciones
+5. Explicar contingencia
 
 ---
 
@@ -239,11 +391,11 @@ NRC: 100001-1
 
 ### Si el DTE falla:
 - Explicar que requiere conexión al firmador local y API de MH
-- Mostrar el JSON generado en la base de datos (campo `dteJson`)
-- Destacar que el sistema está preparado para producción
+- Mostrar el JSON generado en la base de datos
+- Destacar modo contingencia como alternativa
 
 ### Si hay errores de validación:
-- Los mensajes de error son claros y en español
+- Los mensajes son claros y en español
 - Demostrar cómo el sistema guía al usuario
 
 ### Si la sesión expira:
@@ -257,7 +409,7 @@ NRC: 100001-1
 - [ ] Base de datos accesible
 - [ ] Servidor corriendo (`npm run dev`)
 - [ ] Variables de entorno configuradas
-- [ ] Navegador en modo incógnito (para empezar limpio)
+- [ ] Navegador en modo incógnito
 - [ ] Datos de prueba preparados (opcional)
 - [ ] Conexión a internet estable
 - [ ] Pantalla/proyector configurado
@@ -265,6 +417,10 @@ NRC: 100001-1
 ---
 
 ## Duración Total Estimada
-- **Demo mínima:** 10 minutos (registro → factura → PDF)
-- **Demo completa:** 20 minutos (todo el flujo incluyendo DTE)
-- **Demo + preguntas:** 30 minutos
+
+| Tipo | Duración | Contenido |
+|------|----------|-----------|
+| **Demo mínima** | 10 min | Registro → Factura → PDF |
+| **Demo estándar** | 20 min | + Productos, Pagos, Gastos |
+| **Demo completa** | 35 min | + Reportes, DTE, Contingencia |
+| **Demo + preguntas** | 45 min | Todo + sesión de Q&A |

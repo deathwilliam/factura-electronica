@@ -24,8 +24,25 @@ model User {
   telefono  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  invoices  Invoice[]
-  clients   Client[]
+
+  // Relaciones principales
+  invoices           Invoice[]
+  clients            Client[]
+
+  // Nuevos módulos
+  products           Product[]
+  productCategories  ProductCategory[]
+  quotations         Quotation[]
+  payments           Payment[]
+  expenses           Expense[]
+  expenseCategories  ExpenseCategory[]
+  dteInvalidations   DTEInvalidation[]
+  contingencyBatches ContingencyBatch[]
+  createdRoles       Role[]           @relation("CreatedRoles")
+  userRoles          UserRole[]
+  notifications      Notification[]
+  branches           Branch[]
+  companySettings    CompanySettings?
 }
 
 model Client {
@@ -43,30 +60,34 @@ model Client {
   userId    String
   user      User      @relation(fields: [userId], references: [id])
   invoices  Invoice[]
+  quotations Quotation[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
 model Invoice {
-  id                String        @id @default(uuid())
-  clientId          String
-  userId            String
-  amount            Decimal
-  status            String        @default("PENDING") // PENDING, PAID, OVERDUE
-  type              String        @default("CONSUMIDOR_FINAL") // CONSUMIDOR_FINAL, CREDITO_FISCAL
-  dteJson           Json?         // JSON generado
-  dteSigned         Json?         // JSON firmado
-  receptionSeal     String?       // Sello de Recepción
-  generationCode    String?       // Código de Generación (UUID del DTE)
-  controlNumber     String?       // Número de Control (DTE-00-...)
-  transmissionStatus String       @default("PENDING") // PENDING, SENT, REJECTED, CONTINGENCY
-  date              DateTime      @default(now())
-  dueDate           DateTime
-  client            Client        @relation(fields: [clientId], references: [id])
-  user              User          @relation(fields: [userId], references: [id])
-  items             InvoiceItem[]
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                 String           @id @default(uuid())
+  clientId           String
+  userId             String
+  amount             Decimal
+  status             String           @default("PENDING") // PENDING, PAID, OVERDUE, PARTIAL
+  type               String           @default("CONSUMIDOR_FINAL") // CONSUMIDOR_FINAL, CREDITO_FISCAL
+  dteJson            Json?            // JSON generado
+  dteSigned          Json?            // JSON firmado
+  receptionSeal      String?          // Sello de Recepción
+  generationCode     String?          // Código de Generación (UUID del DTE)
+  controlNumber      String?          // Número de Control (DTE-00-...)
+  transmissionStatus String           @default("PENDING") // PENDING, SENT, REJECTED, CONTINGENCY
+  contingencyBatchId String?          // Lote de contingencia (si aplica)
+  date               DateTime         @default(now())
+  dueDate            DateTime
+  client             Client           @relation(fields: [clientId], references: [id])
+  user               User             @relation(fields: [userId], references: [id])
+  items              InvoiceItem[]
+  payments           Payment[]
+  invalidation       DTEInvalidation?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 }
 
 model InvoiceItem {
@@ -75,5 +96,274 @@ model InvoiceItem {
   description String
   quantity    Int
   price       Decimal
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  productId   String?
+  product     Product?  @relation(fields: [productId], references: [id])
+  invoice     Invoice   @relation(fields: [invoiceId], references: [id])
+}
+
+// ============================================
+// MÓDULO: Productos y Servicios
+// ============================================
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id           String           @id @default(uuid())
+  code         String           // Código interno del producto
+  name         String
+  description  String?
+  price        Decimal
+  cost         Decimal?         // Costo (para cálculo de margen)
+  type         String           @default("SERVICE") // PRODUCT, SERVICE
+  unit         String           @default("UNIDAD") // UNIDAD, HORA, DIA, MES, etc.
+  taxable      Boolean          @default(true) // Gravado con IVA
+  active       Boolean          @default(true)
+  categoryId   String?
+  category     ProductCategory? @relation(fields: [categoryId], references: [id])
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  invoiceItems InvoiceItem[]
+  quotationItems QuotationItem[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([userId, code])
+}
+
+// ============================================
+// MÓDULO: Cotizaciones / Proformas
+// ============================================
+
+model Quotation {
+  id            String          @id @default(uuid())
+  number        Int             // Número secuencial de cotización
+  clientId      String
+  client        Client          @relation(fields: [clientId], references: [id])
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  status        String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED, INVOICED
+  validUntil    DateTime        // Fecha de validez
+  notes         String?         // Notas o condiciones
+  discount      Decimal         @default(0) // Descuento global
+  subtotal      Decimal
+  tax           Decimal         // IVA
+  total         Decimal
+  invoiceId     String?         // Factura generada (si se convirtió)
+  items         QuotationItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?  @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int
+  price       Decimal
+  discount    Decimal   @default(0) // Descuento por item
+}
+
+// ============================================
+// MÓDULO: Pagos y Recibos
+// ============================================
+
+model Payment {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+  amount        Decimal
+  method        String   @default("CASH") // CASH, TRANSFER, CARD, CHECK, OTHER
+  reference     String?  // Número de referencia/cheque/transacción
+  notes         String?
+  paymentDate   DateTime @default(now())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+// ============================================
+// MÓDULO: Gastos
+// ============================================
+
+model ExpenseCategory {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  color       String?   // Color para visualización
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  expenses    Expense[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Expense {
+  id           String           @id @default(uuid())
+  description  String
+  amount       Decimal
+  date         DateTime         @default(now())
+  categoryId   String?
+  category     ExpenseCategory? @relation(fields: [categoryId], references: [id])
+  vendor       String?          // Proveedor
+  reference    String?          // Número de factura/recibo
+  receipt      String?          // URL del comprobante (imagen)
+  deductible   Boolean          @default(true) // Deducible de impuestos
+  userId       String
+  user         User             @relation(fields: [userId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+// ============================================
+// MÓDULO: Anulación de DTEs (Invalidación)
+// ============================================
+
+model DTEInvalidation {
+  id                String   @id @default(uuid())
+  invoiceId         String   @unique
+  invoice           Invoice  @relation(fields: [invoiceId], references: [id])
+  reason            String   // Motivo de anulación
+  reasonCode        Int      // Código MH: 1=Cancelación, 2=Error facturación, 3=Devolución
+  invalidationJson  Json?    // JSON de invalidación generado
+  invalidationSigned Json?   // JSON firmado
+  receptionSeal     String?  // Sello de recepción MH
+  status            String   @default("PENDING") // PENDING, SENT, ACCEPTED, REJECTED
+  requestedAt       DateTime @default(now())
+  processedAt       DateTime?
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+}
+
+// ============================================
+// MÓDULO: Contingencia DTE
+// ============================================
+
+model ContingencyBatch {
+  id               String    @id @default(uuid())
+  startDate        DateTime  // Inicio del período de contingencia
+  endDate          DateTime? // Fin del período
+  reason           String    // Motivo de contingencia
+  reasonCode       Int       // Código MH: 1=Sin internet, 2=MH no disponible, etc.
+  status           String    @default("OPEN") // OPEN, CLOSED, TRANSMITTED
+  transmissionDate DateTime? // Fecha de transmisión del lote
+  receptionSeal    String?   // Sello de recepción del lote
+  invoiceCount     Int       @default(0) // Número de facturas en el lote
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// ============================================
+// MÓDULO: Roles y Permisos
+// ============================================
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       // ADMIN, ACCOUNTANT, SALES, VIEWER
+  description String?
+  isSystem    Boolean      @default(false) // Roles del sistema no se pueden eliminar
+  userId      String?      // null = rol del sistema
+  user        User?        @relation("CreatedRoles", fields: [userId], references: [id])
+  permissions RolePermission[]
+  userRoles   UserRole[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique // invoices.create, invoices.view, etc.
+  name        String
+  description String?
+  module      String           // invoices, clients, products, etc.
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedBy String? // Quién asignó el rol
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+}
+
+// ============================================
+// MÓDULO: Notificaciones
+// ============================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // INVOICE_DUE, PAYMENT_RECEIVED, DTE_ERROR, SYSTEM, etc.
+  title     String
+  message   String
+  link      String?  // URL para navegar
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// ============================================
+// MÓDULO: Configuración Avanzada
+// ============================================
+
+model Branch {
+  id            String   @id @default(uuid())
+  name          String
+  code          String   // Código de establecimiento MH (4 dígitos)
+  posCode       String   // Código de punto de venta (4 dígitos)
+  address       String
+  phone         String?
+  isMain        Boolean  @default(false)
+  active        Boolean  @default(true)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, code])
+}
+
+model CompanySettings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  logo            String?  // URL del logo
+  invoicePrefix   String   @default("FAC") // Prefijo para facturas
+  quotationPrefix String   @default("COT") // Prefijo para cotizaciones
+  invoiceNotes    String?  // Notas por defecto en facturas
+  quotationNotes  String?  // Notas por defecto en cotizaciones
+  paymentTerms    String?  // Términos de pago por defecto
+  emailFooter     String?  // Pie de email
+  primaryColor    String   @default("#3b82f6") // Color principal
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
