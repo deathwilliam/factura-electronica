@@ -1,12 +1,15 @@
-# Nixpacks configuration for Railway
+# Force Node.js provider
 [phases.setup]
-nixPkgs = ["nodejs_20", "npm"]
+nixPkgs = ["nodejs-20_x", "npm"]
 
 [phases.install]
-cmds = ["npm ci || npm install"]
+cmds = ["npm install"]
 
 [phases.build]
 cmds = ["npx prisma generate", "npm run build"]
 
 [start]
 cmd = "npx prisma db push && npm start"
+
+[variables]
+NODE_ENV = "production"
