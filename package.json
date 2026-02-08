@@ -8,8 +8,10 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "npx prisma generate",
+    "db:migrate": "npx prisma migrate deploy",
     "db:seed": "npx tsx prisma/seed.ts",
-    "db:reset": "npx prisma migrate reset --force && npm run db:seed"
+    "db:reset": "npx prisma migrate reset --force && npm run db:seed",
+    "railway:deploy": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "@prisma/client": "^6.19.1",

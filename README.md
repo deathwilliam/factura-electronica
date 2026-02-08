@@ -1,36 +1,177 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Factura Electrónica Premium - El Salvador
 
-## Getting Started
+Sistema completo de facturación electrónica para El Salvador, compatible con los 11 tipos de DTE del Ministerio de Hacienda.
 
-First, run the development server:
+## Características
+
+- **11 Tipos de DTE Completos** - Todos los documentos tributarios electrónicos
+- **Catálogos MH Oficiales** - Departamentos, municipios, actividades económicas
+- **Generación de JSON DTE** - Formato oficial del Ministerio de Hacienda
+- **Multi-usuario** - Sistema de autenticación con roles
+- **Dashboard Completo** - Estadísticas y reportes
+
+## Tipos de DTE Implementados
+
+| Código | Tipo | Descripción |
+|--------|------|-------------|
+| 01 | Factura | Consumidor Final |
+| 03 | CCF | Comprobante de Crédito Fiscal |
+| 04 | Nota de Remisión | Traslado de mercadería |
+| 05 | Nota de Crédito | Devoluciones y ajustes |
+| 06 | Nota de Débito | Cargos adicionales |
+| 07 | Comprobante Retención | Retenciones IVA/Renta |
+| 08 | Comprobante Liquidación | Liquidación con terceros |
+| 09 | Doc. Contable | Documento contable de liquidación |
+| 11 | Factura Exportación | Ventas al exterior |
+| 14 | FSE | Factura Sujeto Excluido |
+| 15 | Comprobante Donación | Donaciones |
+
+## Tech Stack
+
+- **Frontend:** Next.js 16, React 19, TypeScript 5, Tailwind CSS 4
+- **Backend:** Next.js Server Actions, Prisma 6
+- **Database:** PostgreSQL (Supabase)
+- **Auth:** NextAuth.js 5 (JWT + Credentials)
+
+## Instalación
 
 ```bash
+# Clonar repositorio
+git clone <repo-url>
+cd factura-electronica
+
+# Instalar dependencias
+npm install
+
+# Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con tus credenciales
+
+# Sincronizar base de datos
+npx prisma db push
+
+# Cargar datos de prueba
+npx tsx prisma/seed.ts
+
+# Iniciar servidor
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Demo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Credenciales de Acceso
+```
+Email: demo@facturapremium.com
+Password: demo123456
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Datos de Prueba Incluidos
+- 1 Usuario con datos fiscales completos
+- 3 Clientes (1 Natural, 2 Jurídicos)
+- 5 Facturas (Consumidor Final y Crédito Fiscal)
+- 1 Nota de Crédito
+- 1 Nota de Débito
+- 1 Nota de Remisión
+- 1 Comprobante de Retención
+- 1 Comprobante de Liquidación
+- 1 Documento Contable
+- 1 Factura de Exportación
+- 1 Factura Sujeto Excluido
+- 1 Comprobante de Donación
 
-## Learn More
+### Recargar Datos Demo
+```bash
+npx tsx prisma/seed.ts
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura del Proyecto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+├── actions/                 # Server Actions
+│   ├── invoices.ts         # Facturas CF y CCF
+│   ├── credit-notes.ts     # Notas de crédito
+│   ├── debit-notes.ts      # Notas de débito
+│   ├── shipping-note.ts    # Notas de remisión
+│   ├── withholding.ts      # Retenciones
+│   ├── settlement.ts       # Liquidaciones
+│   ├── accounting-settlement.ts
+│   ├── export-invoice.ts   # Exportaciones
+│   ├── fse.ts              # Sujeto excluido
+│   ├── donation.ts         # Donaciones
+│   └── dte.ts              # Generación DTE
+├── app/dashboard/          # Páginas del dashboard
+├── components/             # Componentes React
+├── lib/
+│   ├── catalogs/           # Catálogos MH
+│   │   ├── departamentos.ts
+│   │   ├── municipios.ts
+│   │   ├── actividades.ts
+│   │   ├── unidades-medida.ts
+│   │   ├── tributos.ts
+│   │   └── formas-pago.ts
+│   ├── constants.ts        # Constantes
+│   └── prisma.ts           # Cliente Prisma
+└── prisma/
+    ├── schema.prisma       # Modelos de datos
+    └── seed.ts             # Datos de prueba
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Rutas Principales
 
-## Deploy on Vercel
+| Ruta | Descripción |
+|------|-------------|
+| `/dashboard` | Panel principal |
+| `/dashboard/facturas` | Gestión de facturas |
+| `/dashboard/clientes` | Gestión de clientes |
+| `/dashboard/notas-credito` | Notas de crédito |
+| `/dashboard/notas-debito` | Notas de débito |
+| `/dashboard/notas-remision` | Notas de remisión |
+| `/dashboard/retenciones` | Comprobantes retención |
+| `/dashboard/liquidaciones` | Liquidaciones |
+| `/dashboard/doc-contable` | Documentos contables |
+| `/dashboard/exportaciones` | Facturas exportación |
+| `/dashboard/sujeto-excluido` | FSE |
+| `/dashboard/donaciones` | Donaciones |
+| `/dashboard/anulaciones` | Anulación de DTEs |
+| `/dashboard/contingencia` | Modo contingencia |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Variables de Entorno
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+# Base de datos
+DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
+
+# Auth
+NEXTAUTH_SECRET="tu-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+
+# DTE
+DTE_AMBIENTE="00"  # 00=Pruebas, 01=Producción
+```
+
+## Comandos Útiles
+
+```bash
+# Desarrollo
+npm run dev
+
+# Build producción
+npm run build
+
+# Generar cliente Prisma
+npx prisma generate
+
+# Sincronizar esquema
+npx prisma db push
+
+# Ver base de datos
+npx prisma studio
+
+# Ejecutar seed
+npx tsx prisma/seed.ts
+```
+
+## Licencia
+
+Privado - Todos los derechos reservados.

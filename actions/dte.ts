@@ -2,6 +2,15 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import {
+    getActividadDescripcion,
+    TRIBUTO_IVA,
+    crearTributoResumen,
+    UNIDAD_UNIDAD,
+    CONDICION_CONTADO,
+    crearPagoResumen,
+    FORMA_PAGO_EFECTIVO,
+} from "@/lib/catalogs";
 
 // --- Interfaces DTE (El Salvador) ---
 
@@ -35,6 +44,10 @@ interface DTE_Emisor {
     direccion: DTE_Direccion;
     telefono: string;
     correo: string;
+    codEstableMH?: string | null;  // Código MH del establecimiento
+    codEstable?: string | null;     // Código interno
+    codPuntoVentaMH?: string | null; // Código MH punto de venta
+    codPuntoVenta?: string | null;   // Código interno POS
 }
 
 interface DTE_Receptor {
@@ -69,6 +82,14 @@ interface DTE_CuerpoDocumento {
     ivaItem: number;
 }
 
+interface DTE_Pago {
+    codigo: string;
+    montoPago: number;
+    referencia: string | null;
+    plazo: string | null;
+    periodo: number | null;
+}
+
 interface DTE_Resumen {
     totalNoSuj: number;
     totalExenta: number;
@@ -83,12 +104,15 @@ interface DTE_Resumen {
     subTotal: number;
     ivaRete1: number;
     reteRenta: number;
+    ivaPerci1: number;
     montoTotalOperacion: number;
     totalNoGravado: number;
     totalPagar: number;
     totalLetras: string;
     saldoFavor: number;
     condicionOperacion: number;
+    pagos: DTE_Pago[] | null;
+    numPagoElectronico?: string | null;
 }
 
 export interface DTE_Factura {
@@ -167,13 +191,15 @@ function numberToLetters(num: number): string {
     return `${text} ${centavos.toString().padStart(2, "0")}/100 DOLARES`;
 }
 
-function generateControlNumber(sequence: number): string {
+function generateControlNumber(
+    sequence: number,
+    tipoDte: string = "01",
+    codEstable: string = "0001",
+    codPuntoVenta: string = "001"
+): string {
     const prefix = "DTE";
-    const type = "01";
-    const establishment = "0001";
-    const pos = "001";
     const seq = sequence.toString().padStart(15, "0");
-    return `${prefix}-${type}-${establishment}-${pos}-${seq}`;
+    return `${prefix}-${tipoDte}-${codEstable}-${codPuntoVenta}-${seq}`;
 }
 
 // --- Main Actions ---
@@ -212,37 +238,42 @@ export async function generateDTE(invoiceId: string): Promise<{ success: boolean
         const now = new Date();
         const codigoGeneracion = generateUUID();
 
+        // Tipo de DTE y códigos de establecimiento
+        const tipoDte = invoice.type === "CREDITO_FISCAL" ? "03" : "01";
+        const isCCF = invoice.type === "CREDITO_FISCAL";
+
+        // Códigos de establecimiento (TODO: obtener de configuración de sucursal)
+        const codEstable = "0001";
+        const codPuntoVenta = "001";
+
         // Obtener secuencia para número de control
         const invoiceCount = await prisma.invoice.count({
             where: { userId: session.user.id, controlNumber: { not: null } },
         });
-        const controlNumber = generateControlNumber(invoiceCount + 1);
-
-        const tipoDte = invoice.type === "CREDITO_FISCAL" ? "03" : "01";
+        const controlNumber = generateControlNumber(invoiceCount + 1, tipoDte, codEstable, codPuntoVenta);
 
         // Construir cuerpo del documento
         const cuerpoDocumento: DTE_CuerpoDocumento[] = invoice.items.map((item, idx) => {
             const subtotal = Number(item.price) * item.quantity;
             // Para consumidor final, el IVA está incluido en el precio
-            const isCCF = invoice.type === "CREDITO_FISCAL";
-            const ventaGravada = isCCF ? subtotal : subtotal;
+            const ventaGravada = subtotal;
             const ivaItem = isCCF ? Number((subtotal * 0.13).toFixed(2)) : 0;
 
             return {
                 numItem: idx + 1,
-                tipoItem: 1,
+                tipoItem: 2, // 1=Bienes, 2=Servicios (por defecto servicios)
                 numeroDocumento: null,
                 cantidad: item.quantity,
-                codigo: null,
+                codigo: null, // TODO: usar código de producto si existe
                 codTributo: null,
-                uniMedida: 99,
+                uniMedida: UNIDAD_UNIDAD, // 58 = Unidad
                 descripcion: item.description,
                 precioUni: Number(item.price),
                 montoDescu: 0,
                 ventaNoSuj: 0,
                 ventaExenta: 0,
                 ventaGravada,
-                tributos: isCCF ? ["20"] : null,
+                tributos: isCCF ? [TRIBUTO_IVA] : null, // "20" = IVA
                 psv: 0,
                 noGravado: 0,
                 ivaItem,
@@ -251,9 +282,12 @@ export async function generateDTE(invoiceId: string): Promise<{ success: boolean
 
         const totalGravada = cuerpoDocumento.reduce((s, i) => s + i.ventaGravada, 0);
         const totalIva = cuerpoDocumento.reduce((s, i) => s + i.ivaItem, 0);
-        const isCCF = invoice.type === "CREDITO_FISCAL";
         const subTotal = totalGravada;
         const montoTotal = isCCF ? totalGravada + totalIva : totalGravada;
+
+        // Código de actividad económica del emisor
+        const codActividad = invoice.user.giro ? "62010" : "62010"; // TODO: guardar código en User
+        const descActividad = getActividadDescripcion(codActividad) || invoice.user.giro || "Programación informática";
 
         const clientAddress: DTE_Direccion | null = invoice.client.address
             ? { departamento: "06", municipio: "14", complemento: invoice.client.address }
@@ -277,17 +311,21 @@ export async function generateDTE(invoiceId: string): Promise<{ success: boolean
                 nit: invoice.user.nit,
                 nrc: invoice.user.nrc,
                 nombre: invoice.user.razonSocial || invoice.user.name,
-                codActividad: "62010",
-                descActividad: invoice.user.giro || "Servicios",
+                codActividad,
+                descActividad,
                 nombreComercial: invoice.user.razonSocial || invoice.user.name,
-                tipoEstablecimiento: "01",
+                tipoEstablecimiento: "01", // 01=Sucursal, 02=Casa Matriz
                 direccion: {
-                    departamento: "06",
-                    municipio: "14",
+                    departamento: "06", // TODO: obtener de configuración
+                    municipio: "14",    // TODO: obtener de configuración
                     complemento: invoice.user.direccion || "San Salvador",
                 },
                 telefono: invoice.user.telefono || "00000000",
                 correo: invoice.user.email,
+                codEstableMH: null, // Se asigna después del registro en MH
+                codEstable,
+                codPuntoVentaMH: null,
+                codPuntoVenta,
             },
             receptor: {
                 tipoDocumento: invoice.client.nit ? "36" : "13",
@@ -314,17 +352,20 @@ export async function generateDTE(invoiceId: string): Promise<{ success: boolean
                 porcentajeDescuento: 0,
                 totalDescu: 0,
                 tributos: isCCF
-                    ? [{ codigo: "20", descripcion: "Impuesto al Valor Agregado 13%", valor: Number(totalIva.toFixed(2)) }]
+                    ? [crearTributoResumen(TRIBUTO_IVA, totalIva)]
                     : null,
                 subTotal: Number(subTotal.toFixed(2)),
                 ivaRete1: 0,
                 reteRenta: 0,
+                ivaPerci1: 0,
                 montoTotalOperacion: Number(montoTotal.toFixed(2)),
                 totalNoGravado: 0,
                 totalPagar: Number(montoTotal.toFixed(2)),
                 totalLetras: numberToLetters(montoTotal),
                 saldoFavor: 0,
-                condicionOperacion: 1,
+                condicionOperacion: CONDICION_CONTADO, // 1=Contado, 2=Crédito
+                pagos: [crearPagoResumen(FORMA_PAGO_EFECTIVO, montoTotal)], // Por defecto efectivo
+                numPagoElectronico: null,
             },
             extension: null,
             apendice: null,

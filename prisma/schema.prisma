@@ -20,7 +20,10 @@ model User {
   nit       String? // Número de Identificación Tributaria
   nrc       String? // Número de Registro de Contribuyente
   giro      String?
+  codActividad String? // Código de actividad económica MH (ej: "62010")
   direccion String?
+  departamento String? // Código de departamento (01-14)
+  municipio String?    // Código de municipio
   telefono  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -46,23 +49,26 @@ model User {
 }
 
 model Client {
-  id        String    @id @default(uuid())
-  name      String
-  email     String
-  address   String?
-  phone     String?
-  razonSocial String?
-  nit       String?
-  nrc       String?
-  giro      String?
-  dui       String?   // Documento Único de Identidad (Personas Naturales)
-  tipo      String    @default("NATURAL") // NATURAL, JURIDICO
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  invoices  Invoice[]
-  quotations Quotation[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  name         String
+  email        String
+  address      String?
+  departamento String?   // Código de departamento (01-14)
+  municipio    String?   // Código de municipio
+  phone        String?
+  razonSocial  String?
+  nit          String?
+  nrc          String?
+  giro         String?
+  codActividad String?   // Código de actividad económica (para CCF)
+  dui          String?   // Documento Único de Identidad (Personas Naturales)
+  tipo         String    @default("NATURAL") // NATURAL, JURIDICO
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  invoices     Invoice[]
+  quotations   Quotation[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Invoice {
@@ -86,6 +92,8 @@ model Invoice {
   items              InvoiceItem[]
   payments           Payment[]
   invalidation       DTEInvalidation?
+  creditNotes        CreditNote[]
+  debitNotes         DebitNote[]
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 }
@@ -99,6 +107,391 @@ model InvoiceItem {
   productId   String?
   product     Product?  @relation(fields: [productId], references: [id])
   invoice     Invoice   @relation(fields: [invoiceId], references: [id])
+}
+
+// ============================================
+// MÓDULO: Notas de Crédito y Débito
+// ============================================
+
+model CreditNote {
+  id                 String           @id @default(uuid())
+  invoiceId          String           // Factura relacionada
+  invoice            Invoice          @relation(fields: [invoiceId], references: [id])
+  userId             String
+  clientId           String
+  amount             Decimal          // Monto de la nota de crédito
+  reason             String           // Motivo (devolución, descuento, error, etc.)
+  reasonCode         Int              // 1=Devolución, 2=Descuento, 3=Ajuste, 4=Otros
+  type               String           @default("CONSUMIDOR_FINAL") // Mismo tipo que factura original
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String           @default("PENDING")
+  date               DateTime         @default(now())
+  items              CreditNoteItem[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+}
+
+model CreditNoteItem {
+  id            String     @id @default(uuid())
+  creditNoteId  String
+  creditNote    CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  description   String
+  quantity      Int
+  price         Decimal
+}
+
+model DebitNote {
+  id                 String          @id @default(uuid())
+  invoiceId          String          // Factura relacionada
+  invoice            Invoice         @relation(fields: [invoiceId], references: [id])
+  userId             String
+  clientId           String
+  amount             Decimal         // Monto de la nota de débito
+  reason             String          // Motivo (intereses, cargo adicional, etc.)
+  reasonCode         Int             // 1=Intereses, 2=Gastos administrativos, 3=Otros
+  type               String          @default("CONSUMIDOR_FINAL")
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String          @default("PENDING")
+  date               DateTime        @default(now())
+  items              DebitNoteItem[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+
+model DebitNoteItem {
+  id          String    @id @default(uuid())
+  debitNoteId String
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  price       Decimal
+}
+
+// ============================================
+// MÓDULO: Factura Sujeto Excluido (FSE - Tipo 14)
+// Para compras a proveedores sin obligaciones tributarias
+// ============================================
+
+model ExcludedSubjectInvoice {
+  id                 String                      @id @default(uuid())
+  userId             String
+  // Datos del sujeto excluido (proveedor)
+  subjectName        String                      // Nombre del sujeto
+  subjectDocType     String                      // Tipo doc: DUI, PASAPORTE, CARNET_RESIDENTE
+  subjectDocNumber   String                      // Número de documento
+  subjectAddress     String?
+  subjectDepartamento String?
+  subjectMunicipio   String?
+  subjectPhone       String?
+  subjectEmail       String?
+  subjectActivity    String?                     // Actividad o giro
+  // Montos
+  amount             Decimal                     // Total compra
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String                      @default("PENDING")
+  date               DateTime                    @default(now())
+  items              ExcludedSubjectItem[]
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+}
+
+model ExcludedSubjectItem {
+  id          String                 @id @default(uuid())
+  fseId       String
+  fse         ExcludedSubjectInvoice @relation(fields: [fseId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  price       Decimal
+  tipoItem    Int                    @default(1) // 1=Bienes, 2=Servicios
+}
+
+// ============================================
+// MÓDULO: Comprobante de Retención (Tipo 07)
+// Para retenciones IVA y Renta a proveedores
+// ============================================
+
+model WithholdingReceipt {
+  id                 String                  @id @default(uuid())
+  userId             String
+  // Proveedor retenido
+  supplierName       String
+  supplierNit        String
+  supplierNrc        String?
+  supplierAddress    String?
+  supplierDepartamento String?
+  supplierMunicipio  String?
+  supplierPhone      String?
+  supplierEmail      String?
+  supplierCodActividad String?
+  // Documento relacionado (factura del proveedor)
+  relatedDocType     String                  // 03=CCF, 01=Factura
+  relatedDocNumber   String                  // Número de control del doc original
+  relatedDocDate     DateTime                // Fecha del documento original
+  // Montos
+  totalSubject       Decimal                 // Monto sujeto a retención
+  ivaWithheld        Decimal                 @default(0) // IVA retenido (1%)
+  rentaWithheld      Decimal                 @default(0) // Renta retenida (10%)
+  totalWithheld      Decimal                 // Total retenido
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String                  @default("PENDING")
+  date               DateTime                @default(now())
+  items              WithholdingItem[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+}
+
+model WithholdingItem {
+  id                String             @id @default(uuid())
+  withholdingId     String
+  withholding       WithholdingReceipt @relation(fields: [withholdingId], references: [id], onDelete: Cascade)
+  description       String             // Descripción del concepto
+  withholdingType   String             // IVA_1, RENTA_10, RENTA_5
+  subjectAmount     Decimal            // Monto sujeto
+  withheldAmount    Decimal            // Monto retenido
+}
+
+// ============================================
+// MÓDULO: Factura de Exportación (Tipo 11)
+// Para ventas al exterior
+// ============================================
+
+model ExportInvoice {
+  id                 String              @id @default(uuid())
+  userId             String
+  // Cliente extranjero
+  clientName         String
+  clientCountry      String              // Código ISO país
+  clientCountryName  String              // Nombre del país
+  clientDocNumber    String?             // Documento de identificación
+  clientAddress      String?
+  clientPhone        String?
+  clientEmail        String?
+  // Exportación
+  exportType         String              @default("DEFINITIVE") // DEFINITIVE, TEMPORARY
+  incoterm           String?             // FOB, CIF, EXW, etc.
+  portOfExit         String?             // Puerto o frontera de salida
+  destinationCountry String              // País destino
+  // Montos (siempre exentos de IVA)
+  amount             Decimal
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String              @default("PENDING")
+  date               DateTime            @default(now())
+  items              ExportInvoiceItem[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model ExportInvoiceItem {
+  id          String        @id @default(uuid())
+  exportId    String
+  export      ExportInvoice @relation(fields: [exportId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  price       Decimal
+  tipoItem    Int           @default(1) // 1=Bienes, 2=Servicios
+}
+
+// ============================================
+// MÓDULO: Nota de Remisión (Tipo 04)
+// Para traslado de mercadería sin transferencia de propiedad
+// ============================================
+
+model ShippingNote {
+  id                 String             @id @default(uuid())
+  userId             String
+  // Destinatario
+  recipientName      String
+  recipientNit       String?
+  recipientNrc       String?
+  recipientAddress   String
+  recipientDepartamento String?
+  recipientMunicipio String?
+  recipientPhone     String?
+  // Transporte
+  driverName         String?            // Nombre del motorista
+  driverDui          String?            // DUI del motorista
+  vehiclePlate       String?            // Placa del vehículo
+  transportReason    String             // Motivo del traslado
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String             @default("PENDING")
+  date               DateTime           @default(now())
+  items              ShippingNoteItem[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model ShippingNoteItem {
+  id             String       @id @default(uuid())
+  shippingNoteId String
+  shippingNote   ShippingNote @relation(fields: [shippingNoteId], references: [id], onDelete: Cascade)
+  description    String
+  quantity       Int
+  unitValue      Decimal      // Valor unitario referencial
+  tipoItem       Int          @default(1)
+}
+
+// ============================================
+// MÓDULO: Comprobante de Liquidación (Tipo 08)
+// Para liquidación de operaciones con terceros
+// ============================================
+
+model SettlementReceipt {
+  id                 String               @id @default(uuid())
+  userId             String
+  // Tercero/Proveedor
+  providerName       String
+  providerNit        String
+  providerNrc        String?
+  providerAddress    String?
+  providerDepartamento String?
+  providerMunicipio  String?
+  providerPhone      String?
+  providerEmail      String?
+  // Período de liquidación
+  periodStart        DateTime
+  periodEnd          DateTime
+  // Montos
+  grossAmount        Decimal              // Monto bruto
+  deductions         Decimal              @default(0) // Deducciones
+  commissions        Decimal              @default(0) // Comisiones
+  netAmount          Decimal              // Monto neto a pagar
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String               @default("PENDING")
+  date               DateTime             @default(now())
+  items              SettlementItem[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model SettlementItem {
+  id           String            @id @default(uuid())
+  settlementId String
+  settlement   SettlementReceipt @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  description  String
+  quantity     Int
+  unitPrice    Decimal
+  amount       Decimal
+}
+
+// ============================================
+// MÓDULO: Documento Contable de Liquidación (Tipo 09)
+// Documento contable asociado a liquidaciones
+// ============================================
+
+model AccountingSettlement {
+  id                 String                   @id @default(uuid())
+  userId             String
+  // Referencia a liquidación original
+  settlementId       String?                  // Puede estar vinculado a un SettlementReceipt
+  // Emisor original del documento
+  originalEmitterNit String
+  originalEmitterName String
+  // Conceptos
+  concept            String                   // Concepto del documento contable
+  // Montos
+  amount             Decimal
+  taxAmount          Decimal                  @default(0)
+  totalAmount        Decimal
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String                   @default("PENDING")
+  date               DateTime                 @default(now())
+  items              AccountingSettlementItem[]
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+}
+
+model AccountingSettlementItem {
+  id                     String               @id @default(uuid())
+  accountingSettlementId String
+  accountingSettlement   AccountingSettlement @relation(fields: [accountingSettlementId], references: [id], onDelete: Cascade)
+  description            String
+  amount                 Decimal
+}
+
+// ============================================
+// MÓDULO: Comprobante de Donación (Tipo 15)
+// Para donaciones a entidades sin fines de lucro
+// ============================================
+
+model DonationReceipt {
+  id                 String             @id @default(uuid())
+  userId             String
+  // Donatario (quien recibe la donación)
+  donorName          String             // Nombre del donante
+  donorNit           String?
+  donorDui           String?
+  donorAddress       String?
+  donorDepartamento  String?
+  donorMunicipio     String?
+  donorPhone         String?
+  donorEmail         String?
+  // Donatario autorizado (entidad que recibe)
+  recipientName      String             // Nombre de la entidad
+  recipientNit       String             // NIT de la entidad
+  authorizationNumber String?           // Número de autorización MH
+  // Tipo de donación
+  donationType       String             @default("CASH") // CASH, GOODS, SERVICES
+  // Montos
+  amount             Decimal
+  // DTE
+  dteJson            Json?
+  dteSigned          Json?
+  receptionSeal      String?
+  generationCode     String?
+  controlNumber      String?
+  transmissionStatus String             @default("PENDING")
+  date               DateTime           @default(now())
+  items              DonationItem[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+model DonationItem {
+  id          String          @id @default(uuid())
+  donationId  String
+  donation    DonationReceipt @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int
+  value       Decimal         // Valor estimado
+  tipoItem    Int             @default(1) // 1=Bien, 2=Servicio, 3=Efectivo
 }
 
 // ============================================
@@ -338,9 +731,14 @@ model Notification {
 model Branch {
   id            String   @id @default(uuid())
   name          String
-  code          String   // Código de establecimiento MH (4 dígitos)
-  posCode       String   // Código de punto de venta (4 dígitos)
+  code          String   // Código interno de establecimiento (4 dígitos)
+  codEstableMH  String?  // Código asignado por MH después del registro
+  posCode       String   // Código interno de punto de venta (3 dígitos)
+  codPuntoVentaMH String? // Código POS asignado por MH
+  tipoEstablecimiento String @default("01") // 01=Sucursal, 02=Casa Matriz, etc.
   address       String
+  departamento  String?  // Código de departamento (01-14)
+  municipio     String?  // Código de municipio
   phone         String?
   isMain        Boolean  @default(false)
   active        Boolean  @default(true)

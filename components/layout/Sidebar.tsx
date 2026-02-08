@@ -32,11 +32,25 @@ const navSections: NavSection[] = [
         ],
     },
     {
+        title: "Documentos",
+        items: [
+            { label: "Notas Crédito", href: "/dashboard/notas-credito", icon: "📉" },
+            { label: "Notas Débito", href: "/dashboard/notas-debito", icon: "📈" },
+            { label: "Notas Remisión", href: "/dashboard/notas-remision", icon: "🚚" },
+            { label: "Retenciones", href: "/dashboard/retenciones", icon: "🏛️" },
+            { label: "Liquidaciones", href: "/dashboard/liquidaciones", icon: "📊" },
+            { label: "Doc. Contable", href: "/dashboard/doc-contable", icon: "📒" },
+            { label: "Sujeto Excluido", href: "/dashboard/sujeto-excluido", icon: "📝" },
+            { label: "Exportaciones", href: "/dashboard/exportaciones", icon: "🌎" },
+            { label: "Donaciones", href: "/dashboard/donaciones", icon: "🎁" },
+        ],
+    },
+    {
         title: "Finanzas",
         items: [
             { label: "Pagos", href: "/dashboard/pagos", icon: "💳" },
             { label: "Gastos", href: "/dashboard/gastos", icon: "💸" },
-            { label: "Reportes", href: "/dashboard/reportes", icon: "📈" },
+            { label: "Reportes", href: "/dashboard/reportes", icon: "📊" },
         ],
     },
     {
